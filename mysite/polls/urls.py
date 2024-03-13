@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views
-
+app_name = 'polls'
 urlpatterns = [
     # To view the index of the website.
     path("", views.index, name='index'),
