@@ -1,29 +1,39 @@
-from django.shortcuts import render, get_object_or_404
-from django.template import loader
-from django.db.models import F 
+from django.http import HttpResponseRedirect, HttpResponse
+from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
-# Create your first views here.
-from django.http import HttpResponse, Http404, HttpResponseRedirect, HttpRequest
-from .models import Question, Choice
-def index(request):
-    # return HttpResponse('hello')
-    latest_question = Question.objects.order_by('-pub_date')[:5]
-    # output = '<br>'.join([q.question_text for q in latest_question])
-    template = loader.get_template('polls/index.html')
-    context = {
-        'latest_question':latest_question
-    }
-    return render(request, 'polls/index.html', context)
-    return HttpResponse(template.render(context, request))
-def details(request, question_id):
-    question = get_object_or_404(Question, pk=question_id)
-    return render(request, 'polls/details.html', {'question':question})
-    # return HttpResponse("You are viewing question id %s" %(question_id))
-def result(request, question_id):
-    question = get_object_or_404(Question, pk = question_id)
-    return render(request, "polls/result.html", {"question":question})
+from django.views import generic
+from django.db.models import F
+from .models import Choice, Question
+from django.utils import timezone
+
+class IndexView(generic.ListView):
+    template_name = "polls/index.html"
+    context_object_name = "latest_question"
+
+    def get_queryset(self):
+        """Return the last five published questions."""
+        return Question.objects.filter(pub_date__lte=timezone.now()).order_by("-pub_date")[
+        :5
+    ]
+
+
+class DetailView(generic.DetailView):
+    model = Question
+    template_name = "polls/details.html"
+    def get_queryset(self):
+        """
+        Excludes any questions that aren't published yet.
+        """
+        return Question.objects.filter(pub_date__lte=timezone.now())
+
+
+class ResultsView(generic.DetailView):
+    model = Question
+    template_name = "polls/result.html"
+
 def vote(request, question_id):
-    question = get_object_or_404(Question, pk=question_id)
+    # return HttpResponse('You are voting %s'% pk)
+    question = get_object_or_404(Question, pk = question_id)
     try:
         selected_choice = question.choice_set.get(pk=request.POST['choice'])
     except (KeyError, Choice.DoesNotExist):
